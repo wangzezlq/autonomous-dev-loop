@@ -1,123 +1,138 @@
 # Autonomous Dev Loop
 
-A small, framework-neutral discipline for building software features as a tight,
-self-correcting test loop — one an AI coding agent can drive **red → green largely on its
-own** without drifting or gaming the tests, while a human stays responsible for the one thing
-only a human can do: **judging reality and freezing its failures into the test corpus.**
+A reusable, agent-agnostic discipline for building software as a tight, **self-correcting test
+loop** — one an AI coding agent can drive **red → green largely on its own** without drifting or
+gaming the tests, while a human stays responsible for the one thing only a human can do: **judging
+reality and freezing its failures into the test corpus.**
 
-Works in any language, any project, with any capable coding agent — or with no agent at all
-(it's just good engineering discipline that happens to make autonomy safe).
+Packaged as a **skill** you clone into any agent that supports a skills directory (Claude Code,
+Codex, OpenClaw, …). Works in any language; also useful with no agent at all.
 
-> Distilled from a real project where most of the value lived in an *untestable* live-UI layer
-> (screenshot + OCR of another app's meeting subtitles). A hard case — which is exactly why the
-> discipline had to be explicit. See `PLAYBOOK.md` for that worked example.
+**English** · [中文](#中文)
 
-## The one idea that makes it work
+---
 
-> **A loop needs a signal it can read. An agent only knows "tests pass / fail" — it does NOT
-> know "works in reality." Green ≠ working. The loop only *converges* because every real-world
-> failure gets frozen into a permanent fixture; after that the same failure can't recur, and the
-> test corpus creeps toward reality over time.**
+## Install (any agent)
+
+Hand [`INSTALL.md`](INSTALL.md) to your AI assistant and say "install this skill," or do it yourself
+— pick your `SKILLS_DIR` and clone:
+
+| Agent | `SKILLS_DIR` |
+|-------|--------------|
+| Claude Code | `~/.claude/skills` |
+| Codex | `${CODEX_HOME:-$HOME/.codex}/skills` |
+| OpenClaw | `~/.openclaw/skills` |
+
+```bash
+SKILLS_DIR=~/.claude/skills        # change per the table
+mkdir -p "$SKILLS_DIR"
+git clone https://github.com/wangzezlq/autonomous-dev-loop.git "$SKILLS_DIR/autonomous-dev-loop"
+"$SKILLS_DIR/autonomous-dev-loop/bin/check-deps.sh"
+```
+
+For agents that use an always-on instructions file instead of a skills directory, copy
+[`AGENTS.md`](AGENTS.md) into the project you're working on. The method is identical either way.
+
+## The core idea (one line)
+
+> An agent only knows "tests pass / fail," **not** "works in reality." Green ≠ working. The loop
+> only *converges* because a human freezes every real-world failure into a permanent **fixture** —
+> after which it can't recur, and the test corpus creeps toward reality.
 
 So the human's one irreplaceable job is **translating real failures into fixtures.** Everything
-else is the agent's. Skip the fixture step and "keep going until it works" either spins forever
-or stops at a green that doesn't hold up in the world.
+else is the agent's.
 
-## Split the code into two halves
+## How to use it
 
-The loop can only **autonomously** cover the part that's checkable without the world. So the
-highest-leverage move is to push as much behavior as possible into **pure functions**
-(data in → data out) behind a thin I/O shell. Whatever genuinely needs the world stays in the
-shell and is verified by a human + recorded fixtures.
+1. Split code into a **pure core** (data in → data out) and a thin **I/O shell**. The loop only
+   autonomously covers the pure half.
+2. Per feature: extract the pure function → write the **spec as tests** (spec first) → build
+   **fixtures from real data** → run to **red** → make it green editing **only the implementation,
+   never the tests** → **reality-gate** it; turn any real failure into a new fixture.
+3. Enforce the gate with a **pre-commit hook / CI** so "green" isn't just trusted.
 
-| | Pure logic — loop covers it automatically | Live / external — loop stops here |
-|---|---|---|
-| Examples | parsing, transforms, dedup/merge, validation, formatting, decisions over a captured snapshot | real UI, network/API, filesystem, devices, clock, randomness, other apps |
-| "Done" signal | feed input, assert output — fast, deterministic | needs a human + the real thing |
-| Strategy | drop straight into the loop | first **capture reality as a fixture**, push the judgment into a pure function over that fixture; leave the irreducible bit for manual verification |
+Full method in [`SKILL.md`](SKILL.md); the deep dive + a worked example in
+[`references/playbook.md`](references/playbook.md); stand it up in a project via
+[`assets/scaffold/BOOTSTRAP.md`](assets/scaffold/BOOTSTRAP.md).
 
-When a new requirement arrives, first ask: *can this become a function that eats data and
-returns data?* If yes → pure half, make it testable. If no → carve out the testable core and
-keep the I/O shell as thin as possible.
-
-## One iteration (the loop body)
-
-1. **Locate/extract the pure function** for the behavior you're adding or fixing.
-2. **Write the spec as tests** — assertions that encode the intended behavior. Spec first,
-   implementation second.
-3. **Build fixtures from real data, not imagination.** The fastest way to be confidently wrong
-   is to mock your assumptions and pass against the fiction.
-4. **Run → red.** A test that can't fail is testing nothing; seeing it fail first proves it's wired up.
-5. **Make it green by editing only the implementation — never the tests.** Re-run, read the
-   failure, fix, repeat until green. This is the part an agent can grind on its own.
-6. **Reality gate** — exercise it for real. On any gap, **capture that real case as a new
-   fixture** and go back to step 4. This is how reality enters the loop.
-
-## Guardrails (and why each exists)
-
-1. **Tests are read-only to the implementer.** If the make-it-green step can edit the tests, the
-   shortest path to green is to weaken them — not from malice, just optimization. Keep tests in a
-   path the implementer is told not to touch; changing the spec is a separate, deliberate step.
-2. **Spec before implementation** — or you'll rationalize whatever you produced into "done".
-3. **Commit on every green** — cheap rollback, bisectable history; each green is a save point.
-4. **Scope fence** — the loop edits only the directories it should, so it can't wander off.
-5. **Reality gate is non-negotiable** — green is a gate, not a finish line.
-
-**Make the guardrails structural, not just intentions:** a **pre-commit hook or CI** that runs
-the tests turns "green = gate" into something enforced rather than trusted. See
-[`scaffold/pre-commit`](scaffold/pre-commit).
-
-## Anti-patterns
-
-- **Mocking from assumptions** instead of captured reality — you pass against a fiction, and the
-  mock hides exactly the bug reality would have shown.
-- **Letting the implementer relax the tests** to reach green.
-- **Building loop infrastructure for a throwaway** — match rigor to stakes.
-- **Treating green as shipped** — skipping the reality gate.
-- **A pure surface so thin the loop covers nothing that matters.**
-
-## Maturity ladder (self-assess; take the cheapest next step)
-
-- **L1 — Testable:** pure core split from I/O; one command gives a pass/fail verdict.
-- **L2 — Disciplined human-driven loop:** the six steps + guardrails + reality→fixture habit, a
-  human driving each step. (Most teams that "do TDD" live here.)
-- **L3 — Hands-off iteration:** hand over a spec and "make it green, only edit `<impl>`, commit
-  when green", and the agent grinds unattended; the human only does the reality gate.
-- **L4 — Continuous:** CI runs tests on every change, regressions are caught automatically.
-
-The cheapest move toward real autonomy is usually the **pre-commit hook** (makes the gate real)
-and then **one deliberately hands-off run** to find where it breaks.
-
-## Use it with your agent
-
-This repo is a **methodology**, not a universal "skill" format — there is no cross-agent standard
-that auto-triggers by topic. You wire it into whatever agent you use via that agent's own
-instructions/skill mechanism:
-
-- **Claude Code** — it's packaged as a real *skill* that auto-triggers. Install
-  [`dist/autonomous-dev-loop.skill`](dist/), or copy `dist/autonomous-dev-loop/` into
-  `~/.claude/skills/`. Claude then consults it automatically on relevant dev tasks.
-- **OpenAI Codex** — Codex reads `AGENTS.md` as project instructions. Copy this repo's
-  [`AGENTS.md`](AGENTS.md) into the project you're working on (Codex picks it up from the working
-  directory and up the tree). It becomes *always-on* guidance there, rather than topic-triggered.
-- **Cursor / Windsurf / other agents** — paste the method into that tool's rules/instructions
-  file, or just tell the agent "read `PLAYBOOK.md` and follow this loop."
-- **No agent (just you):** follow [`scaffold/BOOTSTRAP.md`](scaffold/BOOTSTRAP.md) to stand it up.
-
-Rule of thumb: **Claude → a skill (auto-triggered); everyone else → an always-on instructions
-file (`AGENTS.md` / rules) or an explicit prompt.** The discipline itself is identical regardless.
-
-## Files
+## What's inside
 
 | Path | What |
 |---|---|
-| `README.md` | the method (this file) |
-| `PLAYBOOK.md` | deep dive: the reasoning + a worked example + per-language test-runner notes |
-| `AGENTS.md` | instructions for an AI agent applying the method |
-| `scaffold/BOOTSTRAP.md` | step-by-step to instantiate the loop in a new/existing project |
-| `scaffold/pre-commit` | an enforced gate: refuse a commit if tests are red |
-| `dist/` | the Claude Code skill package (`.skill`) for one-click install |
+| `SKILL.md` | the method + when an agent should apply it (this is what the agent loads) |
+| `references/playbook.md` | deep dive: reasoning, a worked example, per-language test-runner notes |
+| `AGENTS.md` | drop-in instructions for an AI agent applying the method |
+| `assets/scaffold/BOOTSTRAP.md` | step-by-step to instantiate the loop in a project |
+| `assets/scaffold/pre-commit` | an enforced gate: refuse a commit if tests are red |
+| `INSTALL.md` · `bin/check-deps.sh` | install instructions + dependency check |
 
 ## License
 
 [MIT](LICENSE).
+
+---
+
+<a name="中文"></a>
+
+# 自主开发循环（Autonomous Dev Loop）
+
+一套可复用、与具体 agent 无关的工程纪律：把开发做成一个紧凑的**自我纠错测试循环**——让 AI
+编码 agent 能**基本自主地红→绿迭代**，既不跑偏、也不靠改测试蒙混；而人只负责一件机器替代不了的事：
+**判断现实，并把现实中的失败固化成测试样本（fixture）。**
+
+它打包成一个 **skill**，克隆进任何支持 skills 目录的 agent（Claude Code、Codex、OpenClaw…）即可用。
+任何语言通用；没有 agent 时也能当工程规范用。
+
+## 安装（任意 agent）
+
+把 [`INSTALL.md`](INSTALL.md) 丢给你的 AI 助手说"装一下这个 skill"，或者自己来——选好
+`SKILLS_DIR` 再克隆：
+
+| Agent | `SKILLS_DIR` |
+|-------|--------------|
+| Claude Code | `~/.claude/skills` |
+| Codex | `${CODEX_HOME:-$HOME/.codex}/skills` |
+| OpenClaw | `~/.openclaw/skills` |
+
+```bash
+SKILLS_DIR=~/.claude/skills        # 按上表替换
+mkdir -p "$SKILLS_DIR"
+git clone https://github.com/wangzezlq/autonomous-dev-loop.git "$SKILLS_DIR/autonomous-dev-loop"
+"$SKILLS_DIR/autonomous-dev-loop/bin/check-deps.sh"
+```
+
+如果你的 agent 不用 skills 目录、而是读一份常驻指令文件（比如 Codex 读 `AGENTS.md`），那就把本仓库的
+[`AGENTS.md`](AGENTS.md) 拷进你正在开发的项目里。两种方式，方法完全一样。
+
+## 核心思想（一句话）
+
+> agent 只知道"测试过没过"，**不知道**"在真实世界里好不好用"。绿 ≠ 能用。这个循环之所以能**收敛**，
+> 是因为人把每一次真实世界的失败固化成一条永久 **fixture**——之后它再也不会复发，测试语料一点点逼近现实。
+
+所以人唯一不可外包的活，是**把真实失败翻译成 fixture**。其余都是 agent 的活。
+
+## 怎么用
+
+1. 把代码切成**纯逻辑内核**（吃数据吐数据）和薄薄的 **I/O 外壳**。循环只能自动覆盖纯逻辑那半。
+2. 每个功能：抽出纯函数 → **先写 spec＝测试** → 用**真实数据造 fixture** → 跑到**红** →
+   只改实现、**绝不动测试**地改到绿 → **reality gate** 真实验证；任何真实失败都回填成新 fixture。
+3. 用 **pre-commit / CI** 把门禁做硬，让"绿"不只是靠自觉。
+
+完整方法见 [`SKILL.md`](SKILL.md)；深度版＋实战复盘见
+[`references/playbook.md`](references/playbook.md)；在项目里落地见
+[`assets/scaffold/BOOTSTRAP.md`](assets/scaffold/BOOTSTRAP.md)。
+
+## 仓库内容
+
+| 路径 | 内容 |
+|---|---|
+| `SKILL.md` | 方法 + agent 何时该用它（agent 加载的就是它） |
+| `references/playbook.md` | 深度版：原理、实战复盘、各语言测试 runner 选型 |
+| `AGENTS.md` | 给 AI agent 的即用执行指令 |
+| `assets/scaffold/BOOTSTRAP.md` | 在项目里把循环搭起来的分步清单 |
+| `assets/scaffold/pre-commit` | 强制门禁：测试红就拒绝提交 |
+| `INSTALL.md` · `bin/check-deps.sh` | 安装说明 + 依赖检查 |
+
+## 许可证
+
+[MIT](LICENSE)。

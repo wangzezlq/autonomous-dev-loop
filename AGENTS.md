@@ -1,7 +1,8 @@
 # AGENTS.md
 
 Instructions for an AI coding agent working in this repository, or applying this method to
-another project. Full method: `README.md`. Deep reference: `PLAYBOOK.md`. The essentials:
+another project. Full method: `SKILL.md` / `README.md`. Deep reference: `references/playbook.md`.
+The essentials:
 
 - Define "done" as a **command that exits 0 (green) / non-zero (red)**. That command is your only
   reliable signal. **Green ≠ works in reality.**
