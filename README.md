@@ -88,14 +88,24 @@ the tests turns "green = gate" into something enforced rather than trusted. See
 The cheapest move toward real autonomy is usually the **pre-commit hook** (makes the gate real)
 and then **one deliberately hands-off run** to find where it breaks.
 
-## Use it
+## Use it with your agent
 
-- **Stand it up in a project:** follow [`scaffold/BOOTSTRAP.md`](scaffold/BOOTSTRAP.md).
-- **With an AI agent generally:** point it at [`AGENTS.md`](AGENTS.md) (or just this README +
-  `PLAYBOOK.md`). The method is the method regardless of tool.
-- **With Claude Code specifically:** install the bundled skill —
-  [`dist/autonomous-dev-loop.skill`](dist/) — or copy `dist/autonomous-dev-loop/` into
-  `~/.claude/skills/`. Then it triggers automatically on relevant dev tasks.
+This repo is a **methodology**, not a universal "skill" format — there is no cross-agent standard
+that auto-triggers by topic. You wire it into whatever agent you use via that agent's own
+instructions/skill mechanism:
+
+- **Claude Code** — it's packaged as a real *skill* that auto-triggers. Install
+  [`dist/autonomous-dev-loop.skill`](dist/), or copy `dist/autonomous-dev-loop/` into
+  `~/.claude/skills/`. Claude then consults it automatically on relevant dev tasks.
+- **OpenAI Codex** — Codex reads `AGENTS.md` as project instructions. Copy this repo's
+  [`AGENTS.md`](AGENTS.md) into the project you're working on (Codex picks it up from the working
+  directory and up the tree). It becomes *always-on* guidance there, rather than topic-triggered.
+- **Cursor / Windsurf / other agents** — paste the method into that tool's rules/instructions
+  file, or just tell the agent "read `PLAYBOOK.md` and follow this loop."
+- **No agent (just you):** follow [`scaffold/BOOTSTRAP.md`](scaffold/BOOTSTRAP.md) to stand it up.
+
+Rule of thumb: **Claude → a skill (auto-triggered); everyone else → an always-on instructions
+file (`AGENTS.md` / rules) or an explicit prompt.** The discipline itself is identical regardless.
 
 ## Files
 
