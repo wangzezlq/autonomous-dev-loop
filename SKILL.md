@@ -1,22 +1,6 @@
 ---
 name: autonomous-dev-loop
-description: >-
-  A reusable discipline for developing features as a tight, self-correcting test loop
-  where Claude iterates red→green largely on its own without drifting or gaming the tests.
-  Use this whenever doing or setting up test-driven / spec-first development; when the user
-  wants Claude to "make the tests pass" and self-iterate; when hardening a codebase so an
-  agent can develop in it safely; when separating testable logic from I/O; when figuring out
-  how to test something that depends on live UI, external services, devices, time, or
-  randomness; or when standing up an autonomous-dev workflow (test runner, fixtures,
-  guardrails, pre-commit/CI) in a new or existing project. Trigger even if the user never
-  says "TDD" — e.g. "set up tests so you can iterate on this yourself", "make this repo
-  agent-friendly", "how do I test the part that needs a real browser/meeting/API",
-  "add a spec and grind it green", "why do my autonomous coding loops cheat the tests or
-  spin forever", "let Claude keep developing this until it works".
-  This is about building or running the development loop itself, not one-off testing chores —
-  do NOT use it for merely writing or debugging a single test, for scheduling or recurring test
-  runs (that's the loop/schedule commands), for reviewing a PR for bugs, or for manually
-  verifying a fix by launching the app.
+description: Build autonomous dev loops with spec-first tests, red-green iteration, real fixtures, guardrails against test gaming, and self-checking workflows.
 ---
 
 # Autonomous Dev Loop
@@ -27,6 +11,22 @@ only they can do — judging reality and freezing its failures into the test cor
 
 Language- and project-agnostic. Most valuable when the goal is to develop with little
 hand-holding *without* the loop silently drifting or declaring false victory.
+
+
+## When to use
+
+Use this whenever doing or setting up test-driven / spec-first development; when the user wants the agent to make tests pass and self-iterate; when hardening a codebase so an agent can develop in it safely; when separating testable logic from I/O; when figuring out how to test something that depends on live UI, external services, devices, time, randomness; or when standing up an autonomous-dev workflow with test runner, fixtures, guardrails, pre-commit, or CI in a new or existing project.
+
+Trigger examples:
+
+- "set up tests so you can iterate on this yourself"
+- "make this repo agent-friendly"
+- "how do I test the part that needs a real browser/meeting/API"
+- "add a spec and grind it green"
+- "why do my autonomous coding loops cheat the tests or spin forever"
+- "let Claude keep developing this until it works"
+
+Do not use this for merely writing or debugging a single test, scheduling or recurring test runs, reviewing a PR for bugs, or manually verifying a fix by launching the app.
 
 ## The one idea that makes it work
 
